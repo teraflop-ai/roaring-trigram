@@ -1,0 +1,9 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "byte_trigram_index"
+version = "0.1.0"
+requires-python = ">=3.8"
+description = "Byte trigram substring index implemented in Rust with PyO3"
