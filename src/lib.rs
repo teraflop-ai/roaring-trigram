@@ -2,7 +2,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use roaring::RoaringBitmap;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use hashbrown::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
 
@@ -53,30 +53,27 @@ impl ByteTrigramIndexCore {
     }
 
     fn candidate_docs(&self, needle: &[u8]) -> RoaringBitmap {
-        let ordered_tgs = self.rarest_query_trigrams(needle);
-        if ordered_tgs.is_empty() {
+        let tgs = self.rarest_query_trigrams(needle);
+        if tgs.is_empty() {
             return RoaringBitmap::new();
         }
 
-        let mut result = self
-            .postings
-            .get(&ordered_tgs[0])
-            .cloned()
-            .unwrap_or_else(RoaringBitmap::new);
+        let first = match self.postings.get(&tgs[0]) {
+            Some(bm) => bm,
+            None => return RoaringBitmap::new(),
+        };
 
-        if result.is_empty() {
-            return result;
-        }
+        let mut result = first.clone();
 
-        for tg in &ordered_tgs[1..] {
-            let other = self
-                .postings
-                .get(tg)
-                .cloned()
-                .unwrap_or_else(RoaringBitmap::new);
-            result &= other;
-            if result.is_empty() {
-                break;
+        for tg in &tgs[1..] {
+            match self.postings.get(tg) {
+                Some(other) => {
+                    result &= other;
+                    if result.is_empty() {
+                        break;
+                    }
+                }
+                None => return RoaringBitmap::new(),
             }
         }
 
@@ -122,11 +119,11 @@ impl TrigramIndex {
         self.inner.add(doc_id, data).map_err(PyValueError::new_err)
     }
 
-    fn search(&self, needle: &[u8], k: usize) -> PyResult<Vec<u32>> {
+    fn search(&self, py: Python<'_>, needle: &[u8], k: usize) -> PyResult<Vec<u32>> {
         if needle.len() < 3 {
             return Err(PyValueError::new_err("needle must be at least 3 bytes"));
         }
-        Ok(self.inner.search_candidate_topk(needle, k))
+        Ok(py.allow_threads(|| self.inner.search_candidate_topk(needle, k)))
     }
 
     fn save(&self, path: &str) -> PyResult<()> {

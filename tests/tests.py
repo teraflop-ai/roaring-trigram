@@ -26,7 +26,7 @@ for q in queries[:100]:
 
 t0 = time.perf_counter()
 for q in queries:
-    idx.search(q, TOPK)
+    print(idx.search(q, TOPK))
 t1 = time.perf_counter()
 
 dt = t1 - t0
