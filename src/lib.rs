@@ -105,12 +105,12 @@ impl ByteTrigramIndexCore {
 }
 
 #[pyclass]
-struct ByteTrigramIndex {
+struct TrigramIndex {
     inner: ByteTrigramIndexCore,
 }
 
 #[pymethods]
-impl ByteTrigramIndex {
+impl TrigramIndex {
     #[new]
     fn py_new() -> Self {
         Self {
@@ -142,7 +142,7 @@ impl ByteTrigramIndex {
 }
 
 #[pymodule]
-fn byte_trigram_index(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<ByteTrigramIndex>()?;
+fn roaring_trigram(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<TrigramIndex>()?;
     Ok(())
 }

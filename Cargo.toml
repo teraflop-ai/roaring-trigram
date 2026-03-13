@@ -1,10 +1,10 @@
 [package]
-name = "byte_trigram_index"
+name = "roaring_trigram"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "byte_trigram_index"
+name = "roaring_trigram"
 crate-type = ["cdylib"]
 
 [dependencies]
