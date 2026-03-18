@@ -2,7 +2,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use roaring::RoaringBitmap;
 use serde::{Deserialize, Serialize};
-use hashbrown::{HashMap, HashSet};
+use dashmap::{DashMap, DashSet};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
 
@@ -13,8 +13,8 @@ fn iter_trigram_keys(data: &[u8]) -> impl Iterator<Item = u32> + '_ {
 
 #[derive(Default, Serialize, Deserialize)]
 struct ByteTrigramIndexCore {
-    postings: HashMap<u32, RoaringBitmap>,
-    doc_ids: HashSet<u32>,
+    postings: DashMap<u32, RoaringBitmap>,
+    doc_ids: DashSet<u32>,
 }
 
 impl ByteTrigramIndexCore {
@@ -31,7 +31,7 @@ impl ByteTrigramIndexCore {
             return Err(format!("duplicate doc_id: {}", doc_id));
         }
 
-        let seen: HashSet<u32> = iter_trigram_keys(data).collect();
+        let seen: DashSet<u32> = iter_trigram_keys(data).collect();
         for tg in seen {
             self.postings.entry(tg).or_default().insert(doc_id);
         }
@@ -45,7 +45,7 @@ impl ByteTrigramIndexCore {
 
     fn rarest_query_trigrams(&self, needle: &[u8]) -> Vec<u32> {
         let mut uniq: Vec<u32> = {
-            let set: HashSet<u32> = iter_trigram_keys(needle).collect();
+            let set: DashSet<u32> = iter_trigram_keys(needle).collect();
             set.into_iter().collect()
         };
         uniq.sort_by_key(|&tg| self.trigram_df(tg));
@@ -68,7 +68,7 @@ impl ByteTrigramIndexCore {
         for tg in &tgs[1..] {
             match self.postings.get(tg) {
                 Some(other) => {
-                    result &= other;
+                    result &= other.value();
                     if result.is_empty() {
                         break;
                     }
