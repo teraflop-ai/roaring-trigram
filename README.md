@@ -1,3 +1,6 @@
+```
+uv add roaring-trigram
+```
 ```py
 from roaring_trigram import TrigramIndexBuilder, TrigramIndex
 
